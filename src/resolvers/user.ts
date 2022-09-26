@@ -10,7 +10,13 @@ import {
   Resolver,
 } from "type-graphql";
 import argon2 from "argon2";
+import session from "express-session";
 
+declare module "express-session" {
+  export interface SessionData {
+    userId: number;
+  }
+}
 @InputType()
 class UsernamePasswordInput {
   @Field(() => String)
@@ -58,7 +64,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async login(
     @Arg("options", () => UsernamePasswordInput) options: UsernamePasswordInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, req }: MyContext
   ) {
     const user = await em.findOne(User, {
       userName: options.userName,
@@ -76,6 +82,8 @@ export class UserResolver {
         error: [{ field: "password", message: "incorrect password" }],
       };
     }
+    req.session.userId = user.id;
+    console.log("req", req.session);
     return { user };
   }
 }
